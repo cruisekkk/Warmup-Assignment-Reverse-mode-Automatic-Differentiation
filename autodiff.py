@@ -282,7 +282,9 @@ class Executor:
         # Traverse graph in topological sort order and compute values for all nodes.
         topo_order = find_topo_sort(self.eval_node_list)
         """TODO: Your code here"""
-
+        for node in topo_order:
+          if (node not in node_to_val_map):
+            node_to_val_map[node] = node.op.compute(node, [node_to_val_map[input] for input in node.inputs])
         # Collect node values.
         node_val_results = [node_to_val_map[node] for node in self.eval_node_list]
         return node_val_results
@@ -313,7 +315,20 @@ def gradients(output_node, node_list):
     reverse_topo_order = reversed(find_topo_sort([output_node]))
 
     """TODO: Your code here"""
-
+    def calc_node_grad(node, end):
+      if (end == node):
+        return oneslike_op(end)
+      else:
+        # if addconst
+        if (isinstance(end.op, AddByConstOp)):
+          return calc_node_grad(node, end.inputs[0])
+        # node_to_output_grad[node] = calc_node_grad()
+    for node in reverse_topo_order:
+        end = output_node
+        node_to_output_grad[node] = calc_node_grad(node, end)
+        while (node != end):
+          print(1)
+          break
     # Collect results for gradients requested.
     grad_node_list = [node_to_output_grad[node] for node in node_list]
     return grad_node_list
