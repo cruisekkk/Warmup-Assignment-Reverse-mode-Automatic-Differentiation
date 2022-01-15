@@ -143,10 +143,13 @@ class MulOp(Op):
     def compute(self, node, input_vals):
         """Given values of two input nodes, return result of element-wise multiplication."""
         """TODO: Your code here"""
+        assert len(input_vals) == 2
+        return input_vals[0] * input_vals[1]
 
     def gradient(self, node, output_grad):
         """Given gradient of multiply node, return gradient contributions to each input."""
         """TODO: Your code here"""
+        return [output_grad*node.inputs[1], output_grad*node.inputs[0]]
 
 class MulByConstOp(Op):
     """Op to element-wise multiply a nodes by a constant."""
@@ -160,11 +163,13 @@ class MulByConstOp(Op):
     def compute(self, node, input_vals):
         """Given values of input node, return result of element-wise multiplication."""
         """TODO: Your code here"""
+        assert len(input_vals) == 1
+        return input_vals[0] * node.const_attr
 
     def gradient(self, node, output_grad):
         """Given gradient of multiplication node, return gradient contribution to input."""
         """TODO: Your code here"""
-
+        return [output_grad * node.const_attr]
 class MatMulOp(Op):
     """Op to matrix multiply two nodes."""
     def __call__(self, node_A, node_B, trans_A=False, trans_B=False):
@@ -315,20 +320,25 @@ def gradients(output_node, node_list):
     reverse_topo_order = reversed(find_topo_sort([output_node]))
 
     """TODO: Your code here"""
-    def calc_node_grad(node, end):
-      if (end == node):
-        return oneslike_op(end)
-      else:
-        # if addconst
-        if (isinstance(end.op, AddByConstOp)):
-          return calc_node_grad(node, end.inputs[0])
+    # def calc_node_grad(node, end, curr_grad):
+    #   if (end == node):
+    #     return curr_grad
+    #   else:
+    #     return calc_node_grad(node, end.)
+        
+        # if (isinstance(end.op, AddByConstOp)):
+        #   return calc_node_grad(node, end.inputs[0])
+        # if (isinstance(end.op, MulByConstOp)):
+        #   return end.op.gradient(node, oneslike_op(end))
+          # return mul_byconst_op(calc_node_grad(node, end.inputs[0]), end.const_attr)
         # node_to_output_grad[node] = calc_node_grad()
+    node_to_output_grad[output_node] = oneslike_op(output_node)
     for node in reverse_topo_order:
-        end = output_node
-        node_to_output_grad[node] = calc_node_grad(node, end)
-        while (node != end):
-          print(1)
-          break
+        if (len(node.inputs) == 0):
+            continue
+        node_to_output_grad[node.inputs[0]] = node.op.gradient(node, node_to_output_grad[node])[0]
+        if (len(node.inputs) == 2):
+            node_to_output_grad[node.inputs[1]] = node.op.gradient(node, node_to_output_grad[node])[1]
     # Collect results for gradients requested.
     grad_node_list = [node_to_output_grad[node] for node in node_list]
     return grad_node_list
